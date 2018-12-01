@@ -1,0 +1,215 @@
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html {
+	overflow: hidden;
+	touch-action: none;
+	content-zooming: none;
+}
+body {
+	position: absolute;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	background: #000;
+}
+canvas {
+	width: 100%; 
+	height: 100%;
+	background: #000;
+	position: absolute;
+}
+
+</style>
+
+
+
+<script>
++ function() {
+
+	'use strict';
+
+	var objects = [],
+		N = 2.5,
+		FL = 350,
+		ang = 0,
+		y2d = 0,
+		dist = 0,
+		ratioY = 0,
+		scale = 0.06,
+
+		// z-index sorting
+
+		zIndex = function(p0, p1) {
+			return p0.scale - p1.scale;
+		},
+
+		// main loop
+
+		run = function() {
+
+			requestAnimationFrame(run);
+
+			ctx.fillStyle = 'rgba(0,0,0,0.05)';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// position / rotation
+
+			ang += (pointer.x - canvas.width * 0.5) * 0.00002;
+			y2d += ((pointer.y - canvas.height * 0.5) - y2d) * 0.01;
+
+			// animation loop
+
+			for (
+
+				var i = 0, obj, ca = Math.cos(ang), sa = Math.sin(ang); obj = objects[i++]; obj.run(ca, sa)
+
+			);
+
+			// z-index sorting
+
+			objects.sort(zIndex);
+
+		},
+
+		// create canvas
+
+		canvas = {
+
+			elem: document.createElement('canvas'),
+
+			resize: function() {
+
+				this.width = this.elem.width = this.elem.offsetWidth;
+				this.height = this.elem.height = this.elem.offsetHeight;
+				dist = canvas.width / 16;
+
+				if (window.location.href.indexOf("fullcpgrid") > -1) {
+					scale = 0.09;
+					dist = this.width / 10;
+				}
+
+			},
+
+			init: function() {
+				var ctx = this.elem.getContext('2d');
+				document.body.appendChild(this.elem);
+				window.addEventListener('resize', this.resize.bind(this), false);
+				this.resize();
+				return ctx;
+			}
+
+		},
+
+		ctx = canvas.init(),
+
+		// init pointer
+
+		pointer = (function(canvas) {
+
+			var pointer = {
+
+				x: canvas.width / 1.5,
+				y: canvas.height / 1.4,
+
+				pointer: function(e) {
+
+					var touchMode = e.targetTouches,
+						pointer;
+					if (touchMode) {
+						e.preventDefault();
+						pointer = touchMode[0];
+					} else pointer = e;
+					this.x = pointer.clientX;
+					this.y = pointer.clientY;
+
+				}
+			};
+
+			window.addEventListener('mousemove', function(e) {
+				this.pointer(e);
+			}.bind(pointer), false);
+			canvas.elem.addEventListener('touchmove', function(e) {
+				this.pointer(e);
+			}.bind(pointer), false);
+
+			return pointer;
+
+		}(canvas));
+
+	// setup
+
+	+ function init() {
+
+		// image
+		var image = new Image();
+		image.src = 'ernie.PNG';
+
+		// Object constructor 
+
+		var Obj = function(x, z) {
+
+			this.img = image;
+			this.x3d = x;
+			this.z3d = z;
+			this.scale = 0.0;
+
+		};
+
+		Obj.prototype.run = function(ca, sa) {
+
+			if (this.img.complete) {
+				ratioY = this.img.height / this.img.width;
+				Obj.prototype.run = Obj.prototype.anim;
+			}
+
+		};
+
+		Obj.prototype.anim = function(ca, sa) {
+
+			var x = this.x3d * dist,
+				z = this.z3d * dist,
+				x2d = sa * x + ca * z,
+				z2d = sa * z - ca * x;
+
+			this.scale = FL / (FL + z2d);
+
+			var w = this.scale * canvas.width * scale;
+
+			ctx.drawImage(
+				this.img, (x2d * this.scale + canvas.width * 0.5 - w * 0.5), (y2d * this.scale + canvas.height * 0.5 - w * 0.5 * ratioY),
+				w,
+				w * ratioY
+			);
+
+		};
+
+		// create N x N objects
+
+		for (var x = -N; x <= N; x++) {
+			for (var z = -N; z <= N; z++) {
+				objects.push(
+					new Obj(x, z)
+				);
+			}
+		}
+
+		// start animation
+
+		run();
+
+	}();
+
+}();
+
+
+</script>
+
+</head>
+<body>
+
+</body>
+</html>g
